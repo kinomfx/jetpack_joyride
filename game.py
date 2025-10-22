@@ -1,5 +1,7 @@
 import pygame
-
+from obstacle import *
+from agent import *
+from platform import *
 class JetPackJoyRide:
     def __init__(self):
         pygame.init()
@@ -7,11 +9,11 @@ class JetPackJoyRide:
         pygame.display.set_caption("JetPack JoyRide")
         self.screen_height = 700
         self.screen_width = 700
+        #agents
+        self.agent = Agent(self.screen)
+        #platform
+        self.platform = Platform(self.screen , self.screen_width, self.screen_height)
         # Game properties
-        self.circle_pos = [100, 350]
-        self.agent_radius = 30
-        self.rect = pygame.Rect(0, self.screen_width - 100 , self.screen_width, 100)
-        self.rect_color = (169, 169, 169)
         self.clock = pygame.time.Clock()
         self.running = True
         self.score = 0
@@ -19,24 +21,27 @@ class JetPackJoyRide:
         # Physics
         self.gravity = 5
         self.upward_force = 10  # how strong the jetpack push is
-
-    def draw_agent(self):
-        pygame.draw.circle(self.screen, "red", self.circle_pos, self.agent_radius)
-
-    def draw(self):
-        self.screen.fill("black")
-        pygame.draw.rect(self.screen, self.rect_color, self.rect)
-
-        # draw score text
+    def draw_score(self):
         font = pygame.font.SysFont("comicsans", 30)
-        text = font.render("Score: " + str(int(self.score//10)), True, (255, 255, 255))
+        text = font.render("Score: " + str(int(self.score // 10)), True, (255, 255, 255))
         text_rect = text.get_rect()
         text_rect.topright = self.score_pos  # visible at top-left corner
         self.screen.blit(text, text_rect)
+
+    def draw(self):
+        self.screen.fill("black")
+        self.platform.draw()
+        # draw score text
+        self.draw_score()
         # draw player
-        self.draw_agent()
+        self.agent.draw_agent()
     def increase_score(self):
-        self.score += 0.1;
+        self.score += 0.1
+
+    def apply_gravity(self):
+        if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
+            self.agent.circle_pos[1] += self.gravity
+
     def run(self):
         while self.running:
             for event in pygame.event.get():
@@ -46,12 +51,10 @@ class JetPackJoyRide:
             # check continuous key presses
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
-                if self.circle_pos[1] - self.agent_radius >= 0 :
-                    self.circle_pos[1] -= self.upward_force
+                self.agent.move_up(self.upward_force)
 
-                    # apply gravity (fall down when not pressing space)
-            if self.circle_pos[1] + self.agent_radius < self.rect.top:
-                self.circle_pos[1] += self.gravity
+            # apply gravity (fall down when not pressing space)
+            self.apply_gravity()
 
             # draw everything
             self.draw()

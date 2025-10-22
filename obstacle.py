@@ -13,6 +13,6 @@ class Obstacle :
         self.ob = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(self.screen, self.rect_color, self.ob)
     def move(self):
-        self.x -= 5
+        self.y -= 5
 
 

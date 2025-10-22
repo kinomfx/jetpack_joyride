@@ -2,6 +2,7 @@ import pygame
 from obstacle import *
 from agent import *
 from platform import *
+from obstacle import *
 class JetPackJoyRide:
     def __init__(self):
         pygame.init()
@@ -21,6 +22,7 @@ class JetPackJoyRide:
         # Physics
         self.gravity = 5
         self.upward_force = 10  # how strong the jetpack push is
+
     def draw_score(self):
         font = pygame.font.SysFont("comicsans", 30)
         text = font.render("Score: " + str(int(self.score // 10)), True, (255, 255, 255))
@@ -35,6 +37,7 @@ class JetPackJoyRide:
         self.draw_score()
         # draw player
         self.agent.draw_agent()
+
     def increase_score(self):
         self.score += 0.1
 
@@ -56,6 +59,12 @@ class JetPackJoyRide:
             # apply gravity (fall down when not pressing space)
             self.apply_gravity()
 
+            #obstacles
+            #here we need to add obstacles and check for collision there are 2 surfaces
+            #one is the agent and the other is the Obstacle class
+            #which btw will be stored in an array of obstacles
+            #there should be a probability function like 90% probability that an obstacle will not be created at 120 times a second so 1/10 * 120 is still 12 obstacles persecond which is alot we just need 2 obstacles per the whole screen time
+            #this is the current thing that i have to figure out
             # draw everything
             self.draw()
             self.increase_score()

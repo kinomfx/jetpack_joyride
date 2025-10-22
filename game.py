@@ -3,18 +3,19 @@ import pygame
 class JetPackJoyRide:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((500, 500))
+        self.screen = pygame.display.set_mode((700 , 700))
         pygame.display.set_caption("JetPack JoyRide")
-
+        self.screen_height = 700
+        self.screen_width = 700
         # Game properties
         self.circle_pos = [100, 350]
-        self.agent_radius = 40
-        self.rect = pygame.Rect(0, 400, 500, 100)
+        self.agent_radius = 30
+        self.rect = pygame.Rect(0, self.screen_width - 100 , self.screen_width, 100)
         self.rect_color = (169, 169, 169)
         self.clock = pygame.time.Clock()
         self.running = True
         self.score = 0
-        self.score_pos = (475 , 10)
+        self.score_pos = (self.screen_width-25 , 10)
         # Physics
         self.gravity = 5
         self.upward_force = 10  # how strong the jetpack push is
@@ -45,9 +46,10 @@ class JetPackJoyRide:
             # check continuous key presses
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
-                self.circle_pos[1] -= self.upward_force  # move up while space is held
+                if self.circle_pos[1] - self.agent_radius >= 0 :
+                    self.circle_pos[1] -= self.upward_force
 
-            # apply gravity (fall down when not pressing space)
+                    # apply gravity (fall down when not pressing space)
             if self.circle_pos[1] + self.agent_radius < self.rect.top:
                 self.circle_pos[1] += self.gravity
 

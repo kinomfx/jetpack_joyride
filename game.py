@@ -22,6 +22,7 @@ class JetPackJoyRide:
         # Physics
         self.gravity = 5
         self.upward_force = 10  # how strong the jetpack push is
+        self.obstacle = Obstacle(500 , 500 , 50 , self.screen)
 
     def draw_score(self):
         font = pygame.font.SysFont("comicsans", 30)
@@ -37,6 +38,8 @@ class JetPackJoyRide:
         self.draw_score()
         # draw player
         self.agent.draw_agent()
+        #obstacle drawing
+        self.obstacle.draw()
 
     def increase_score(self):
         self.score += 0.1
@@ -65,6 +68,8 @@ class JetPackJoyRide:
             #which btw will be stored in an array of obstacles
             #there should be a probability function like 90% probability that an obstacle will not be created at 120 times a second so 1/10 * 120 is still 12 obstacles persecond which is alot we just need 2 obstacles per the whole screen time
             #this is the current thing that i have to figure out
+            #try :
+
             # draw everything
             self.draw()
             self.increase_score()

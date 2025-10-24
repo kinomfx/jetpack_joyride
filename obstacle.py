@@ -6,10 +6,10 @@ class Obstacle:
         self.x = x
         self.y = y
         self.rotation = rotation
-        self.height = 200
-        self.width = 100
+        self.height = 150
+        self.width = 50
         self.screen = screen
-        self.rect_color = (169, 169, 169)
+        self.rect_color = (141,85,36)
 
         # Create a surface for the rectangle
         self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
@@ -24,7 +24,8 @@ class Obstacle:
 
         # Draw it
         self.screen.blit(rotated_image, rect)
+        self.move()
 
     def move(self):
-        self.y -= 5
+        self.x -= 5
 

@@ -1,8 +1,9 @@
 import pygame
+import random
 from obstacle import *
 from agent import *
-from platform import *
-from obstacle import *
+from platform import Platform
+
 class JetPackJoyRide:
     def __init__(self):
         pygame.init()
@@ -22,15 +23,27 @@ class JetPackJoyRide:
         # Physics
         self.gravity = 5
         self.upward_force = 10  # how strong the jetpack push is
-        self.obstacle_array = []
-        self.obstacle = Obstacle(500 , 500 , 50 , self.screen)
+        self.obstacle_array = [Obstacle(1000 , 500 , 50 , self.screen)]
+        self.sleep_time = random.randint(140,200)
+        # self.obstacle = Obstacle(500 , 500 , 50 , self.screen)
 
     def draw_score(self):
         font = pygame.font.SysFont("comicsans", 30)
-        text = font.render("Score: " + str(int(self.score // 10)), True, (255, 255, 255))
+        text = font.render("Score: " + str(int(self.score)), True, (255, 255, 255))
         text_rect = text.get_rect()
         text_rect.topright = self.score_pos  # visible at top-left corner
         self.screen.blit(text, text_rect)
+
+    def draw_obstacles(self):
+        if(self.sleep_time <= 0):
+            rotation = random.choice([0, 22.5, 45, 67.5, 90, -22.5, -45, -67.5])
+            height = random.randint(200,600)
+            self.obstacle_array.append(Obstacle(700 + 50 , height , rotation , self.screen))
+            self.sleep_time = random.randint(140,200)
+        while(len(self.obstacle_array) > 0 and self.obstacle_array[0].x + self.obstacle_array[0].height < 0):
+            self.obstacle_array.pop(0)
+        for obs in self.obstacle_array:
+            obs.draw()
 
     def draw(self):
         self.screen.fill("black")
@@ -40,10 +53,10 @@ class JetPackJoyRide:
         # draw player
         self.agent.draw_agent()
         #obstacle drawing
-        self.obstacle.draw()
+        self.draw_obstacles()
 
     def increase_score(self):
-        self.score += 0.1
+        self.score += 1                                                   
 
     def apply_gravity(self):
         if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
@@ -64,14 +77,10 @@ class JetPackJoyRide:
             self.apply_gravity()
 
             #obstacles
-            #here we need to add obstacles and check for collision there are 2 surfaces
-            #one is the agent and the other is the Obstacle class
-            #which btw will be stored in an array of obstacles
-            #there should be a probability function like 90% probability that an obstacle will not be created at 120 times a second so 1/10 * 120 is still 12 obstacles persecond which is alot we just need 2 obstacles per the whole screen time
-            #this is the current thing that i have to figure out
-            #try :
+            
  
             # draw everything
+            self.sleep_time -= 1
             self.draw()
             self.increase_score()
             pygame.display.update()

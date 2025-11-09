@@ -81,7 +81,7 @@ class JetPackJoyRide:
         while waiting:
             self.screen.fill("black")
             font = pygame.font.SysFont("comicsans", 40)
-            text1 = font.render(" Game Over ", True, (255, 0, 0))
+            text1 = font.render("💥 Game Over 💥", True, (255, 0, 0))
             text2 = font.render("Press SPACE to restart", True, (255, 255, 255))
             text3 = font.render("Press ESC to quit", True, (255, 255, 255))
 
@@ -129,8 +129,9 @@ class JetPackJoyRide:
 
         # Game ended — show end screen and restart
         self.show_endscreen()
-        self.__init__()  # reinitialize everything (reset score, agent, obstacles)
-        self.run()  # restart the main loop
+        pygame.quit()
+        new_game = JetPackJoyRide()
+        new_game.run()
 
 
 if __name__ == "__main__":

@@ -76,30 +76,61 @@ class JetPackJoyRide:
         if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
             self.agent.circle_pos[1] += self.gravity
 
+    def show_endscreen(self):
+        waiting = True
+        while waiting:
+            self.screen.fill("black")
+            font = pygame.font.SysFont("comicsans", 40)
+            text1 = font.render(" Game Over ", True, (255, 0, 0))
+            text2 = font.render("Press SPACE to restart", True, (255, 255, 255))
+            text3 = font.render("Press ESC to quit", True, (255, 255, 255))
+
+            text1_rect = text1.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 50))
+            text2_rect = text2.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+            text3_rect = text3.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 50))
+
+            self.screen.blit(text1, text1_rect)
+            self.screen.blit(text2, text2_rect)
+            self.screen.blit(text3, text3_rect)
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        waiting = False  # restart
+                    elif event.key == pygame.K_ESCAPE:
+                        pygame.quit()
+                        exit()
+
     def run(self):
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
+                    pygame.quit()
+                    exit()
 
-            # check continuous key presses
+            # Key handling
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 self.agent.move_up(self.upward_force)
 
-            # apply gravity (fall down when not pressing space)
+            # Apply gravity
             self.apply_gravity()
 
-            # obstacles
-
-            # draw everything
+            # Update obstacle spawning and drawing
             self.sleep_time -= 1
             self.draw()
             self.increase_score()
             pygame.display.update()
             self.clock.tick(60)
 
-        pygame.quit()
+        # Game ended — show end screen and restart
+        self.show_endscreen()
+        self.__init__()  # reinitialize everything (reset score, agent, obstacles)
+        self.run()  # restart the main loop
 
 
 if __name__ == "__main__":

@@ -9,3 +9,7 @@ class Agent:
     def move_up(self , upward_force):
         if self.circle_pos[1] - self.agent_radius >= 0:
             self.circle_pos[1] -= upward_force
+    def get_mask(self):
+        surf = pygame.Surface((self.agent_radius * 2, self.agent_radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(surf, (255, 0, 0), (self.agent_radius, self.agent_radius), self.agent_radius)
+        return pygame.mask.from_surface(surf)

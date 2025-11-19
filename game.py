@@ -3,7 +3,9 @@ import random
 from obstacle import *
 from agent import *
 from platform import Platform
-
+from coins import *
+#need different "zones", one where obstacles are spawning randomly as usual, and one where there is a 
+#coins + obstacle pattern(s) that the agent has to navigate through to get the coins
 
 class JetPackJoyRide:
     def __init__(self):
@@ -28,6 +30,7 @@ class JetPackJoyRide:
         self.sleep_time = random.randint(140, 200)
         # self.obstacle = Obstacle(500 , 500 , 50 , self.screen)
         self.agent_mask = self.agent.get_mask()
+        self.coin_array = [Coin(800, random.randint(100, 600), self.screen)]
 
 
     def draw_score(self):
@@ -58,6 +61,30 @@ class JetPackJoyRide:
                 print("💥 Collision Detected!")
                 self.running = False  # stop game on collision (or handle however you like)
                 break
+    
+    def draw_coins(self):
+        while (len(self.coin_array) > 0 and self.coin_array[0].x + self.coin_array[0].radius < 0):
+            self.coin_array.pop(0)
+        if (random.randint(1, 100) <= 1):  # 1% chance to spawn a coin each frame
+            self.coin_array.append(Coin(800, random.randint(100, 600), self.screen))
+        for coin in self.coin_array:
+            coin.draw()
+            coin.move()
+            coin_rect = coin.get_rect()
+            # create a surface for the coin, draw the coin on it, then create a mask
+            coin_surf = pygame.Surface((coin.radius * 2, coin.radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(coin_surf, (255, 255, 255), (coin.radius, coin.radius), coin.radius)
+            coin_mask = pygame.mask.from_surface(coin_surf)
+
+            # Calculate offset: position of agent surface relative to coin surface
+            agent_left = self.agent.circle_pos[0] - self.agent.agent_radius
+            agent_top = self.agent.circle_pos[1] - self.agent.agent_radius
+            offset = (int(agent_left - coin_rect.left), int(agent_top - coin_rect.top))
+
+            if coin_mask.overlap(self.agent_mask, offset):
+                print("💰 Coin Collected!")
+                self.increase_score()
+                self.coin_array.remove(coin)
 
     def draw(self):
         self.screen.fill("black")
@@ -68,6 +95,7 @@ class JetPackJoyRide:
         self.agent.draw_agent()
         # obstacle drawing
         self.draw_obstacles()
+        self.draw_coins()
 
     def increase_score(self):
         self.score += 1
@@ -81,7 +109,7 @@ class JetPackJoyRide:
         while waiting:
             self.screen.fill("black")
             font = pygame.font.SysFont("comicsans", 40)
-            text1 = font.render("💥 Game Over 💥", True, (255, 0, 0))
+            text1 = font.render("Game Over!", True, (255, 0, 0))
             text2 = font.render("Press SPACE to restart", True, (255, 255, 255))
             text3 = font.render("Press ESC to quit", True, (255, 255, 255))
 

@@ -1,26 +1,29 @@
 import pygame
 import math
+import environment as env
 
 class Obstacle:
-    def __init__(self, x, y, rotation, screen):
+    def __init__(self, x, y, rotation, rotating=False, rotation_speed=0):
         self.x = x
         self.y = y
         self.rotation = rotation
-        self.height = 150
-        self.width = 50
-        self.screen = screen
-        self.rect_color = (141,85,36)
+        self.rotating = rotating
+        self.rotation_speed = rotation_speed
+        self.height = env.OBSTACLE_HEIGHT
+        self.width = env.OBSTACLE_WIDTH
+        self.rect_color = env.OBSTACLE_COLOR
         self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         self.image.fill(self.rect_color)
 
-    def draw(self):
+    def draw(self, screen):
         rotated_image = pygame.transform.rotate(self.image, self.rotation)
         rect = rotated_image.get_rect(center=(self.x, self.y))
-        self.screen.blit(rotated_image, rect)
-        self.move()
+        screen.blit(rotated_image, rect)
 
     def move(self):
-        self.x -= 5
+        self.x -= env.OBSTACLE_SPEED
+        if self.rotating:
+            self.rotation = (self.rotation + self.rotation_speed) % 360
 
     def get_rect(self):
         """Return the rotated image and its rect for collision checks."""

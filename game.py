@@ -1,167 +1,150 @@
 import pygame
-import random
-from obstacle import *
-from agent import *
+from enum import Enum, auto
+from agent import Agent
 from platform import Platform
-from coins import *
-#need different "zones", one where obstacles are spawning randomly as usual, and one where there is a 
-#coins + obstacle pattern(s) that the agent has to navigate through to get the coins
+from hud import HUD
+from spawner import Spawner
+from score_manager import ScoreManager
+import environment as env
 
-class JetPackJoyRide:
-    def __init__(self):
+class GameState(Enum):
+    MENU = auto()
+    RUNNING = auto()
+    GAME_OVER = auto()
+    HIGHSCORES = auto()
+    QUIT = auto()
+
+class Game:
+    def __init__(self, start_state=GameState.MENU):
         pygame.init()
-        self.screen = pygame.display.set_mode((700, 700))
+        pygame.event.clear()  # Clear event queue to avoid leftover events
+        self.screen = pygame.display.set_mode((env.SCREEN_WIDTH, env.SCREEN_HEIGHT))
         pygame.display.set_caption("JetPack JoyRide")
-        self.screen_height = 700
-        self.screen_width = 700
-        # agents
-        self.agent = Agent(self.screen)
-        # platform
-        self.platform = Platform(self.screen, self.screen_width, self.screen_height)
-        # Game properties
+        self.screen_width = env.SCREEN_WIDTH
+        self.screen_height = env.SCREEN_HEIGHT
         self.clock = pygame.time.Clock()
-        self.running = True
+        self.state = start_state
         self.score = 0
-        self.score_pos = (self.screen_width - 25, 10)
-        # Physics
-        self.gravity = 5
-        self.upward_force = 10  # how strong the jetpack push is
-        self.obstacle_array = [Obstacle(1000, 500, 50, self.screen)]
-        self.sleep_time = random.randint(140, 200)
-        # self.obstacle = Obstacle(500 , 500 , 50 , self.screen)
-        self.agent_mask = self.agent.get_mask()
-        self.coin_array = [Coin(800, random.randint(100, 600), self.screen)]
-
-
-    def draw_score(self):
-        font = pygame.font.SysFont("comicsans", 30)
-        text = font.render("Score: " + str(int(self.score)), True, (255, 255, 255))
-        text_rect = text.get_rect()
-        text_rect.topright = self.score_pos  # visible at top-left corner
-        self.screen.blit(text, text_rect)
-
-    def draw_obstacles(self):
-        if (self.sleep_time <= 0):
-            rotation = random.choice([0, 22.5, 45, 67.5, 90, -22.5, -45, -67.5])
-            height = random.randint(200, 600)
-            self.obstacle_array.append(Obstacle(700 + 50, height, rotation, self.screen))
-            self.sleep_time = random.randint(140, 200)
-        while (len(self.obstacle_array) > 0 and self.obstacle_array[0].x + self.obstacle_array[0].height < 0):
-            self.obstacle_array.pop(0)
-        for obs in self.obstacle_array:
-            obs.draw()
-            rotated_image, rect = obs.get_rect()
-            obstacle_mask = pygame.mask.from_surface(rotated_image)
-
-            # Calculate offset between agent and obstacle
-            offset_x = int(rect.left - (self.agent.circle_pos[0] - self.agent.agent_radius))
-            offset_y = int(rect.top - (self.agent.circle_pos[1] - self.agent.agent_radius))
-
-            if obstacle_mask.overlap(self.agent_mask, (-offset_x, -offset_y)):
-                print("💥 Collision Detected!")
-                self.running = False  # stop game on collision (or handle however you like)
-                break
-    
-    def draw_coins(self):
-        while (len(self.coin_array) > 0 and self.coin_array[0].x + self.coin_array[0].radius < 0):
-            self.coin_array.pop(0)
-        if (random.randint(1, 100) <= 1):  # 1% chance to spawn a coin each frame
-            self.coin_array.append(Coin(800, random.randint(100, 600), self.screen))
-        for coin in self.coin_array:
-            coin.draw()
-            coin.move()
-            coin_rect = coin.get_rect()
-            # create a surface for the coin, draw the coin on it, then create a mask
-            coin_surf = pygame.Surface((coin.radius * 2, coin.radius * 2), pygame.SRCALPHA)
-            pygame.draw.circle(coin_surf, (255, 255, 255), (coin.radius, coin.radius), coin.radius)
-            coin_mask = pygame.mask.from_surface(coin_surf)
-
-            # Calculate offset: position of agent surface relative to coin surface
-            agent_left = self.agent.circle_pos[0] - self.agent.agent_radius
-            agent_top = self.agent.circle_pos[1] - self.agent.agent_radius
-            offset = (int(agent_left - coin_rect.left), int(agent_top - coin_rect.top))
-
-            if coin_mask.overlap(self.agent_mask, offset):
-                print("💰 Coin Collected!")
-                self.increase_score()
-                self.coin_array.remove(coin)
-
-    def draw(self):
-        self.screen.fill("black")
-        self.platform.draw()
-        # draw score text
-        self.draw_score()
-        # draw player
-        self.agent.draw_agent()
-        # obstacle drawing
-        self.draw_obstacles()
-        self.draw_coins()
-
-    def increase_score(self):
-        self.score += 1
+        self.coin_count = 0
+        self.gravity = env.GRAVITY
+        self.upward_force = env.UPWARD_FORCE
+        self.agent = Agent()
+        self.platform = Platform(self.screen_width, self.screen_height)
+        self.hud = HUD(self.screen, self.screen_width, self.screen_height)
+        self.spawner = Spawner()
+        self.score_manager = ScoreManager()
 
     def apply_gravity(self):
         if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
             self.agent.circle_pos[1] += self.gravity
 
-    def show_endscreen(self):
-        waiting = True
-        while waiting:
-            self.screen.fill("black")
-            font = pygame.font.SysFont("comicsans", 40)
-            text1 = font.render("Game Over!", True, (255, 0, 0))
-            text2 = font.render("Press SPACE to restart", True, (255, 255, 255))
-            text3 = font.render("Press ESC to quit", True, (255, 255, 255))
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.state = GameState.QUIT
 
-            text1_rect = text1.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 50))
-            text2_rect = text2.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
-            text3_rect = text3.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 50))
+    def update(self):
+        if self.state != GameState.RUNNING:
+            return
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_SPACE]:
+            self.agent.move_up(self.upward_force)
+        self.apply_gravity()
+        agent_mask = self.agent.get_mask()
+        self.spawner.update_obstacles()
+        if self.spawner.check_obstacle_collision(self.agent, agent_mask):
+            self.state = GameState.GAME_OVER
+            return
+        self.spawner.update_coins()
+        if self.spawner.check_coin_collision(self.agent, agent_mask):
+            self.coin_count += 1
+        self.score += 1
 
-            self.screen.blit(text1, text1_rect)
-            self.screen.blit(text2, text2_rect)
-            self.screen.blit(text3, text3_rect)
-            pygame.display.update()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        waiting = False  # restart
-                    elif event.key == pygame.K_ESCAPE:
-                        pygame.quit()
-                        exit()
+    def render(self):
+        self.screen.fill(env.BACKGROUND_COLOR)
+        self.platform.draw(self.screen)
+        self.agent.draw_agent(self.screen)
+        self.spawner.draw_obstacles(self.screen)
+        self.spawner.draw_coins(self.screen)
+        self.hud.draw(self.score, self.coin_count)
+        pygame.display.update()
 
     def run(self):
-        while self.running:
+        while self.state != GameState.QUIT:
+            if self.state == GameState.MENU:
+                self.show_startscreen()
+            elif self.state == GameState.HIGHSCORES:
+                self.show_highscores()
+            elif self.state == GameState.RUNNING:
+                self.run_game()
+            elif self.state == GameState.GAME_OVER:
+                self.show_endscreen()
+        pygame.quit()
+
+    def run_game(self):
+        """Main game loop."""
+        while self.state == GameState.RUNNING:
+            self.handle_events()
+            if self.state == GameState.RUNNING:
+                self.update()
+                self.render()
+            self.clock.tick(60)
+        if self.state == GameState.RUNNING:
+            self.state = GameState.GAME_OVER
+
+    def show_endscreen(self):
+        waiting = True
+        clock = pygame.time.Clock()
+        # Save score when game ends
+        self.score_manager.add_score(self.score, self.coin_count)
+        while waiting:
+            self.hud.draw_endscreen()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
+                    waiting = False
+                    self.state = GameState.QUIT
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        # Only option: go to menu
+                        waiting = False
+                        self.state = GameState.MENU
+            clock.tick(60)
 
-            # Key handling
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_SPACE]:
-                self.agent.move_up(self.upward_force)
+    def show_startscreen(self):
+        waiting = True
+        clock = pygame.time.Clock()
+        while waiting:
+            self.hud.draw_startscreen()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting = False
+                    self.state = GameState.QUIT
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        waiting = False
+                        self.state = GameState.RUNNING
+                    elif event.key == pygame.K_h:
+                        waiting = False
+                        self.state = GameState.HIGHSCORES
+                    elif event.key == pygame.K_ESCAPE:
+                        waiting = False
+                        self.state = GameState.QUIT
+            clock.tick(60)
 
-            # Apply gravity
-            self.apply_gravity()
-
-            # Update obstacle spawning and drawing
-            self.sleep_time -= 1
-            self.draw()
-            self.increase_score()
-            pygame.display.update()
-            self.clock.tick(60)
-
-        # Game ended — show end screen and restart
-        self.show_endscreen()
-        pygame.quit()
-        new_game = JetPackJoyRide()
-        new_game.run()
-
+    def show_highscores(self):
+        waiting = True
+        clock = pygame.time.Clock()
+        while waiting:
+            self.hud.draw_highscores()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting = False
+                    self.state = GameState.QUIT
+                if event.type == pygame.KEYDOWN:
+                    waiting = False
+                    self.state = GameState.MENU
+            clock.tick(60)
 
 if __name__ == "__main__":
-    game = JetPackJoyRide()
+    game = Game()
     game.run()

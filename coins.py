@@ -1,18 +1,18 @@
 import pygame
+import environment as env
 
 class Coin:
-    def __init__(self, x, y, screen):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.radius = 15
-        self.screen = screen
-        self.color = (255, 223, 0)  # Gold color
+        self.radius = env.COIN_RADIUS
+        self.color = env.COIN_COLOR
 
-    def draw(self):
-        pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.radius)
+    def draw(self, screen):
+        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
 
     def move(self):
-        self.x -= 5  # Move left by 5 pixels
+        self.x -= env.COIN_SPEED
 
     def get_rect(self):
         """Return the rect for collision checks."""

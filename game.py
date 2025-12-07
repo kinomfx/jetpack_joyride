@@ -6,6 +6,10 @@ from hud import HUD
 from spawner import Spawner
 from score_manager import ScoreManager
 import environment as env
+#remove
+from state_extractor import extract_state, extract_state_vector
+import pprint
+#remove
 
 class GameState(Enum):
     MENU = auto()
@@ -33,6 +37,10 @@ class Game:
         self.hud = HUD(self.screen, self.screen_width, self.screen_height)
         self.spawner = Spawner()
         self.score_manager = ScoreManager()
+        # state print debug timer (ms)
+        self._last_state_print = pygame.time.get_ticks()
+        # agent vertical velocity estimate (pixels per frame)
+        self._agent_vy = 0.0
 
     def reset_game(self):
         """Reset game state for a restart without full reinitialization."""
@@ -42,6 +50,10 @@ class Game:
         self.agent = Agent()
         self.spawner = Spawner()
         self.state = GameState.RUNNING
+        # reset state print timer so immediate print doesn't occur
+        self._last_state_print = pygame.time.get_ticks()
+        # reset agent velocity
+        self._agent_vy = 0.0
 
     def apply_gravity(self):
         if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
@@ -61,6 +73,8 @@ class Game:
             mult = env.MAX_SPEED_MULTIPLIER
         # inform spawner about current speed multiplier
         self.spawner.speed_multiplier = mult
+        # estimate agent vertical velocity: sample position before update
+        prev_y = self.agent.circle_pos[1]
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             self.agent.move_up(self.upward_force)
@@ -74,6 +88,8 @@ class Game:
         if self.spawner.check_coin_collision(self.agent, agent_mask):
             self.coin_count += 1
         self.score += 1
+        # update agent vertical velocity estimate (positive = moving up)
+        self._agent_vy = float(prev_y - self.agent.circle_pos[1])
 
     def render(self):
         self.screen.fill(env.BACKGROUND_COLOR)
@@ -103,6 +119,29 @@ class Game:
             if self.state == GameState.RUNNING:
                 self.update()
                 self.render()
+                #remove
+                # print the RL state every 5 seconds for debugging
+                try:
+                    now = pygame.time.get_ticks()
+                    if now - self._last_state_print >= 5000:
+                        state = extract_state(self)
+                        print("[StateExtractor]", end=" ")
+                        pprint.pprint(state)
+                        # also print normalized vector state (if numpy available)
+                        try:
+                            vec = extract_state_vector(self)
+                            try:
+                                import numpy as _np
+                                print("[StateVector]", _np.array2string(vec, precision=3))
+                            except Exception:
+                                # fallback: print as list
+                                print("[StateVector]", list(vec))
+                        except Exception as e:
+                            print(f"[StateVector] unavailable: {e}")
+                        self._last_state_print = now
+                except Exception as e:
+                    print(f"[StateExtractor] error: {e}")
+                #remove
             self.clock.tick(60)
         if self.state == GameState.RUNNING:
             self.state = GameState.GAME_OVER

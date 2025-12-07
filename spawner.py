@@ -55,7 +55,7 @@ class Spawner:
 
     def spawn_obstacle(self):
         rotation = random.choice(env.OBSTACLE_ROTATIONS)
-        height = random.randint(200, env.SCREEN_HEIGHT - env.PLATFORM_HEIGHT)
+        height = random.randint(50, env.SCREEN_HEIGHT - env.PLATFORM_HEIGHT)
         # 30% chance to spawn a rotating obstacle
         if random.random() < 0.3:
             rotating = True
@@ -125,11 +125,6 @@ class Spawner:
     def spawn_pattern(self):
         # choose a pattern from the pool and execute it
         pattern = random.choice(self.patterns)
-        # Debug: print which pattern is spawning
-        try:
-            print(f"[Spawner] Spawn pattern: {pattern.__name__}")
-        except Exception:
-            print("[Spawner] Spawn pattern: <unknown>")
         pattern()
         # give some time until next pattern or obstacle (scaled by speed)
         base = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)

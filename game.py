@@ -34,6 +34,15 @@ class Game:
         self.spawner = Spawner()
         self.score_manager = ScoreManager()
 
+    def reset_game(self):
+        """Reset game state for a restart without full reinitialization."""
+        pygame.event.clear()
+        self.score = 0
+        self.coin_count = 0
+        self.agent = Agent()
+        self.spawner = Spawner()
+        self.state = GameState.RUNNING
+
     def apply_gravity(self):
         if self.agent.circle_pos[1] + self.agent.agent_radius < self.platform.rect.top:
             self.agent.circle_pos[1] += self.gravity
@@ -105,7 +114,7 @@ class Game:
                     self.state = GameState.QUIT
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        # Only option: go to menu
+                        # ESC goes to menu
                         waiting = False
                         self.state = GameState.MENU
             clock.tick(60)
@@ -122,7 +131,8 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         waiting = False
-                        self.state = GameState.RUNNING
+                        # Reset game state before starting a new game
+                        self.reset_game()
                     elif event.key == pygame.K_h:
                         waiting = False
                         self.state = GameState.HIGHSCORES

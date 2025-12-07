@@ -20,8 +20,9 @@ class Obstacle:
         rect = rotated_image.get_rect(center=(self.x, self.y))
         screen.blit(rotated_image, rect)
 
-    def move(self):
-        self.x -= env.OBSTACLE_SPEED
+    def move(self, speed_multiplier=1.0):
+        # move left scaled by speed multiplier
+        self.x -= env.OBSTACLE_SPEED * speed_multiplier
         if self.rotating:
             self.rotation = (self.rotation + self.rotation_speed) % 360
 

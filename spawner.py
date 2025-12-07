@@ -11,7 +11,9 @@ class Spawner:
         self.obstacle_array = []
         self.coin_array = []
         # spawn timing for next unit (obstacle or pattern)
-        self.sleep_time = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)
+        self.sleep_time = float(random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX))
+        # dynamic speed multiplier (set by Game each frame)
+        self.speed_multiplier = 1.0
         # Zone system: 1 = obstacle-only, 2 = pattern zone (coin-only or mixed)
         self.zone = 1
         self.zone_spawn_count = 0
@@ -62,7 +64,9 @@ class Spawner:
             rotating = False
             rotation_speed = 0
         self.add_obstacle(Obstacle(env.SCREEN_WIDTH + env.OBSTACLE_WIDTH, height, rotation, rotating, rotation_speed))
-        self.sleep_time = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)
+        # scale next spawn time inversely with speed (faster -> shorter wait)
+        base = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)
+        self.sleep_time = max(float(base) / max(self.speed_multiplier, 0.01), env.MIN_SPAWN_TIME)
         # zone accounting
         self.zone_spawn_count += 1
         self._maybe_switch_zone()
@@ -77,8 +81,9 @@ class Spawner:
         while len(self.obstacle_array) > 0 and self.obstacle_array[0].x + self.obstacle_array[0].height < 0:
             self.obstacle_array.pop(0)
         for obs in self.obstacle_array:
-            obs.move()
-        self.sleep_time -= 1
+            obs.move(self.speed_multiplier)
+        # decrement sleep_time faster when game is faster
+        self.sleep_time -= self.speed_multiplier
 
     def draw_obstacles(self, screen):
         for obs in self.obstacle_array:
@@ -110,7 +115,7 @@ class Spawner:
         while len(self.coin_array) > 0 and self.coin_array[0].x + self.coin_array[0].radius < 0:
             self.coin_array.pop(0)
         for coin in self.coin_array:
-            coin.move()
+            coin.move(self.speed_multiplier)
 
     def draw_coins(self, screen):
         for coin in self.coin_array:
@@ -126,8 +131,9 @@ class Spawner:
         except Exception:
             print("[Spawner] Spawn pattern: <unknown>")
         pattern()
-        # give some time until next pattern or obstacle
-        self.sleep_time = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)
+        # give some time until next pattern or obstacle (scaled by speed)
+        base = random.randint(env.OBSTACLE_SPAWN_MIN, env.OBSTACLE_SPAWN_MAX)
+        self.sleep_time = max(float(base) / max(self.speed_multiplier, 0.01), env.MIN_SPAWN_TIME)
         self.zone_spawn_count += 1
         self._maybe_switch_zone()
 

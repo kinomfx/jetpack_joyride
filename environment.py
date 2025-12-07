@@ -18,6 +18,11 @@ OBSTACLE_SPEED = 5
 COIN_RADIUS = 15
 COIN_COLOR = (255, 223, 0)
 COIN_SPEED = 5
+# Speed scaling: higher score increases game speed
+# divisor: multiplier = 1 + score / SPEED_SCORE_DIVISOR, clamped to MAX_SPEED_MULTIPLIER
+SPEED_SCORE_DIVISOR = 5000.0
+MAX_SPEED_MULTIPLIER = 2.0
+MIN_SPAWN_TIME = 20
 FONT_NAME = "comicsans"
 FONT_SIZE = 30
 END_FONT_SIZE = 40

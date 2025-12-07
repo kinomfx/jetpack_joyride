@@ -55,6 +55,12 @@ class Game:
     def update(self):
         if self.state != GameState.RUNNING:
             return
+        # update speed multiplier based on score
+        mult = 1.0 + (self.score / env.SPEED_SCORE_DIVISOR)
+        if mult > env.MAX_SPEED_MULTIPLIER:
+            mult = env.MAX_SPEED_MULTIPLIER
+        # inform spawner about current speed multiplier
+        self.spawner.speed_multiplier = mult
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             self.agent.move_up(self.upward_force)

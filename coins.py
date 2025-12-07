@@ -11,8 +11,9 @@ class Coin:
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
 
-    def move(self):
-        self.x -= env.COIN_SPEED
+    def move(self, speed_multiplier=1.0):
+        # move left scaled by speed multiplier
+        self.x -= env.COIN_SPEED * speed_multiplier
 
     def get_rect(self):
         """Return the rect for collision checks."""

@@ -51,7 +51,7 @@ class ReplayBuffer:
 class DQNAgent:
     """DQN Agent for training on JetPack JoyRide"""
 
-    def __init__(self, state_size=27, action_size=2, learning_rate=0.001):
+    def __init__(self, state_size=31, action_size=2, learning_rate=0.001):
         self.state_size = state_size
         self.action_size = action_size
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -198,7 +198,7 @@ def train_dqn_agent(num_episodes=1000, render_every=50, save_every=100):
     os.makedirs("plots", exist_ok=True)
 
     # Initialize agent and environment
-    agent = DQNAgent(state_size=27, action_size=2)
+    agent = DQNAgent(state_size=31, action_size=2)
     env = GameGym()
 
     # Training statistics
@@ -333,7 +333,7 @@ def evaluate_agent(agent_path, num_episodes=10, render=True):
     import pygame
 
     # Load agent
-    agent = DQNAgent(state_size=27, action_size=2)
+    agent = DQNAgent(state_size=31, action_size=2)
     agent.load(agent_path)
     agent.epsilon = 0  # No exploration during evaluation
 

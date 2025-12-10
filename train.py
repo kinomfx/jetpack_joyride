@@ -61,7 +61,7 @@ def main():
     print()
 
     # Create agent
-    agent = DQNAgent(state_size=27, action_size=2, learning_rate=args.lr)
+    agent = DQNAgent(state_size=31, action_size=2, learning_rate=args.lr)
     agent.gamma = args.gamma
     agent.epsilon_decay = args.epsilon_decay
 

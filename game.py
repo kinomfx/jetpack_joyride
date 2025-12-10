@@ -1,7 +1,7 @@
 import pygame
 from enum import Enum, auto
 from agent import Agent
-from platform import Platform
+from platform import *
 from hud import HUD
 from spawner import Spawner
 from score_manager import ScoreManager
@@ -202,4 +202,5 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
+    score = game.score
     game.run()

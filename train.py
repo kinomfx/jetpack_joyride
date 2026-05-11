@@ -1,15 +1,13 @@
 """
 train.py - Multi-Agent D3QN Optimized Training for JetPack JoyRide.
-Implements co-evolution between a Protagonist and a Saboteur as per synopsis.pdf.
 """
-
 import argparse
 import os
 import pygame
 import numpy as np
 import torch
 from collections import deque
-from d3qn_agent import D3QNAgent  # Ensure you update your agent class to D3QN
+from d3qn_agent import D3QNAgent
 from dqn_agent import preprocess_frame
 
 def main():
@@ -24,13 +22,8 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"!!! SYSTEM CHECK: Training on {device} !!!")
 
-    # 1. INITIALIZE DUAL AGENTS (Synopsis Requirement)
-    # Protagonist: Actions [0: Nothing, 1: Jump]
     protagonist = D3QNAgent(action_size=2, learning_rate=args.lr, device=device)
-
-    # Saboteur: Actions [0: Wait, 1: Missile High, 2: Missile Mid, 3: Missile Low]
-    # Action size depends on your specific hazard implementation
-    saboteur = D3QNAgent(action_size=4, learning_rate=args.lr, device=device)
+    saboteur = D3QNAgent(action_size=5, learning_rate=args.lr, device=device)
 
     if args.continue_from and os.path.exists(args.continue_from):
         protagonist.load(args.continue_from + "_protagonist.pth")
@@ -40,58 +33,59 @@ def main():
         from game_gym import GameGym
         os.makedirs("checkpoints", exist_ok=True)
         env = GameGym()
-
-        # Shared frame stack for pixel-based input
         frame_stack = deque(maxlen=4)
 
-        print("Starting Competitive Adversarial Training...")
+        print("Starting Competitive Adversarial Training with Frame Skipping...")
 
         for episode in range(protagonist.episode_count, protagonist.episode_count + args.episodes):
             render_this_episode = (episode % args.render_every == 0)
             env.reset(headless=not render_this_episode)
 
-            # Build initial stack
             init_frame = preprocess_frame(env.render_frame())
             for _ in range(4): frame_stack.append(init_frame)
             state = np.stack(list(frame_stack), axis=0)
 
-            done, prev_coins, ep_p_reward, ep_s_reward = False, 0, 0, 0
+            done, prev_coins = False, 0
+            ep_p_reward, ep_s_reward = 0, 0
+
+            # Action holding variables
+            p_action, s_action = 0, 0
+            step_p_reward, step_s_reward = 0, 0
 
             while not done:
-                # 2. SIMULTANEOUS ACTION SELECTION
-                p_action = protagonist.select_action(state)
-                s_action = saboteur.select_action(state)
+                # 1. CNN AWAKES ONLY EVERY 4 FRAMES
+                if protagonist.total_steps % 4 == 0:
+                    p_action = protagonist.select_action(state)
+                    s_action = saboteur.select_action(state)
+                    step_p_reward, step_s_reward = 0, 0 # Reset block rewards
 
-                # 3. ENVIRONMENT STEP (Must handle two actions now)
+                # 2. FAST PHYSICS STEP
                 _, _, done, info = env.step(p_action, s_action)
 
-                # 4. CAPTURE NEXT STATE
-                next_frame = preprocess_frame(env.render_frame())
-                frame_stack.append(next_frame)
-                next_state = np.stack(list(frame_stack), axis=0)
-
-                # 5. ZERO-SUM REWARD STRUCTURE[cite: 1]
-                # Protagonist Reward
-                p_reward = -10.0 if done else 0.1
-                if info['coins'] > prev_coins: p_reward += 5.0
-
-                # Saboteur Reward: Inverse of Protagonist[cite: 1]
-                s_reward = 10.0 if done else -0.1
+                # 3. ACCUMULATE REWARDS
+                p_rew = -10.0 if done else 0.1
+                if info['coins'] > prev_coins: p_rew += 5.0
+                s_rew = 10.0 if done else -0.1
 
                 prev_coins = info['coins']
-                ep_p_reward += p_reward
-                ep_s_reward += s_reward
+                step_p_reward += p_rew
+                step_s_reward += s_rew
+                ep_p_reward += p_rew
+                ep_s_reward += s_rew
 
-                # 6. STORE EXPERIENCES
-                protagonist.push(state, p_action, p_reward, next_state, done)
-                saboteur.push(state, s_action, s_reward, next_state, done)
+                # 4. PROCESS MEMORY AND TRAIN AT THE END OF THE SKIP (OR DEATH)
+                if protagonist.total_steps % 4 == 3 or done:
+                    next_frame = preprocess_frame(env.render_frame())
+                    frame_stack.append(next_frame)
+                    next_state = np.stack(list(frame_stack), axis=0)
 
-                # 7. CO-EVOLUTION TRAINING OPTIMIZATION[cite: 1]
-                if protagonist.total_steps % 4 == 0:
+                    protagonist.push(state, p_action, step_p_reward, next_state, done)
+                    saboteur.push(state, s_action, step_s_reward, next_state, done)
+
                     protagonist.train_step()
                     saboteur.train_step()
+                    state = next_state
 
-                state = next_state
                 protagonist.total_steps += 1
 
                 if render_this_episode:

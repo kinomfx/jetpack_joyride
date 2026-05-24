@@ -102,9 +102,12 @@ class Game:
 
         self.apply_gravity()
         agent_mask = self.agent.get_mask()
-        self.spawner.update_obstacles()
 
-        if self.spawner.check_obstacle_collision(self.agent, agent_mask):
+        # UPDATED: Replaced update_obstacles with update_threats
+        self.spawner.update_threats()
+
+        # UPDATED: Replaced check_obstacle_collision with check_adversarial_collision
+        if self.spawner.check_adversarial_collision(self.agent, agent_mask):
             self.state = GameState.GAME_OVER
             return
 
@@ -120,8 +123,11 @@ class Game:
         self.screen.fill(env.BACKGROUND_COLOR)
         self.platform.draw(self.screen)
         self.agent.draw_agent(self.screen)
-        self.spawner.draw_obstacles(self.screen)
+
+        # UPDATED: Replaced draw_obstacles with draw_threats
+        self.spawner.draw_threats(self.screen)
         self.spawner.draw_coins(self.screen)
+
         self.hud.draw(self.score, self.coin_count)
 
     def run(self):
@@ -143,7 +149,13 @@ class Game:
             if self.state == GameState.RUNNING:
                 self.update()
                 self.render()
+
+                # THIS IS THE MISSING LINE FOR MANUAL PLAY!
+                if not self.headless:
+                    pygame.display.update()
+
             self.clock.tick(60)
+
         if self.state == GameState.RUNNING:
             self.state = GameState.GAME_OVER
 
@@ -198,7 +210,6 @@ class Game:
                     self.state = GameState.MENU
             clock.tick(60)
 
-
 if __name__ == "__main__":
-    game = Game()
+    game = Game(headless=False)  # <--- Forces the window to open
     game.run()

@@ -25,7 +25,7 @@ class GameGym:
         """
         Modified step function to handle both agents.
         p_action: Action for the Protagonist (Player)
-        s_action: Action for the Saboteur (Obstacle Spawner)
+        s_action: Action for the Saboteur (Threat Spawner)
         """
         pygame.event.pump()
 
@@ -36,14 +36,14 @@ class GameGym:
         self.game.apply_gravity()
 
         # 2. Apply Saboteur Action to the Spawner
-        # This passes the adversarial decision to the new update_obstacles method
-        self.game.spawner.update_obstacles(saboteur_action=s_action)
+        # This passes the adversarial decision to the new 3-Zone threat method
+        self.game.spawner.update_threats(saboteur_action=s_action)
 
-        # 3. Standard Environment Updates
+        # 3. Standard Environment Updates (Coins)
         self.game.spawner.update_coins()
 
-        # 4. Check for Adversarial Collision
-        collision = self.game.spawner.check_obstacle_collision(
+        # 4. Check for Adversarial Collision (Obstacles AND Missiles)
+        collision = self.game.spawner.check_adversarial_collision(
             self.game.agent, self.game.agent.get_mask()
         )
 

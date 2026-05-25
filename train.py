@@ -64,7 +64,11 @@ def main():
 
                 # 3. ACCUMULATE REWARDS
                 p_rew = -10.0 if done else 0.1
-                if info['coins'] > prev_coins: p_rew += 5.0
+
+                # --- INCREASED COIN REWARD ---
+                if info['coins'] > prev_coins:
+                    p_rew += 15.0  # Increased from 5.0 to heavily incentivize coin collection
+
                 s_rew = 10.0 if done else -0.1
 
                 prev_coins = info['coins']
